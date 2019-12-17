@@ -1,0 +1,10 @@
+working:
+  secs: 100
+  nanos: 0
+short_break:
+  secs: 30
+  nanos: 0
+long_break:
+  secs: 50
+  nanos: 0
+

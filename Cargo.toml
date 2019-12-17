@@ -1,0 +1,24 @@
+[package]
+name    = "pomodorust"
+version = "1.0.0"
+authors = ["Martin Heuschober <epsilonhalbe@gmail.com>"]
+edition = "2018"
+autotests = false
+
+
+[[bin]]
+bench = false
+path = "app/main.rs"
+name = "pomodorust"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = { version = "0.4.10", features = ["serde"] }
+clap = "2.27.0"
+config = "0.9.3"
+failure = "0.1"
+lazy_static = "1.4.0"
+serde = { version = "1.0", features = ["derive"] }
+termion = "1.5.3"
+tui = "0.7"
