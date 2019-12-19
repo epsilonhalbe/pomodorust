@@ -34,14 +34,14 @@ impl App {
     // event handlers
 
     // returns true when to quit
-    pub fn quit_or_pause(&mut self, key: Key, _cfg: &Cfg) -> bool {
-        if key == Key::Char('p') {
+    pub fn quit_or_pause(&mut self, key: Key, cfg: &Cfg) -> bool {
+        if key == Key::Char(cfg.pause_key) {
             self.state = match self.state {
                 State::Paused => State::Running,
                 _ => State::Paused,
             }
         };
-        key == Key::Char('q')
+        key == Key::Char(cfg.quit_key)
     }
 
     pub fn tick(&mut self, cfg: &Cfg, duration: Duration) {
@@ -70,15 +70,15 @@ impl App {
     }
 
     // render functions
-    pub fn paragraph<B>(&self, f: &mut Frame<B>, area: Rect)
+    pub fn paragraph<B>(&self, cfg : &Cfg, f: &mut Frame<B>, area: Rect)
     where
         B: Backend,
     {
         let content = [
             Text::raw(format!("Past pomodoros: {}\n", self.past_pomodoros)),
-            Text::raw("Press 'p' to toggle pause.\n"),
+            Text::raw(format!("Press '{}' to toggle pause.\n", cfg.pause_key)),
             Text::raw("Toggle pause to skip break.\n"),
-            Text::raw("Press 'q' to quit."),
+            Text::raw(format!("Press '{}' to quit.", cfg.quit_key)),
         ];
         Paragraph::new(content.iter())
             .block(

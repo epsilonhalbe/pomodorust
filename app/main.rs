@@ -5,7 +5,7 @@ use pomodorust::state::App;
 use std::io;
 use termion::raw::IntoRawMode;
 use tui::backend::TermionBackend;
-use tui::layout::{Constraint::Percentage, Direction, Layout};
+use tui::layout::{Constraint::Percentage, Direction::{Horizontal, Vertical}, Layout};
 use tui::widgets::{Block, Borders, Widget};
 use tui::Terminal;
 
@@ -26,7 +26,7 @@ fn main() -> Result<(), failure::Error> {
             Block::default().render(&mut f, size);
 
             let chunks = Layout::default()
-                .direction(Direction::Vertical)
+                .direction(Vertical)
                 .margin(0)
                 .constraints([Percentage(75), Percentage(25)].as_ref())
                 .split(size);
@@ -36,12 +36,12 @@ fn main() -> Result<(), failure::Error> {
                 .render(&mut f, chunks[0]);
             {
                 let chunks = Layout::default()
-                    .direction(Direction::Horizontal)
+                    .direction(Horizontal)
                     .margin(1)
                     .constraints([Percentage(50), Percentage(50)].as_ref())
                     .split(chunks[0]);
 
-                app.paragraph(&mut f, chunks[0]);
+                app.paragraph(&cfg, &mut f, chunks[0]);
                 cfg.paragraph(&mut f, chunks[1]);
             }
             {
@@ -54,7 +54,7 @@ fn main() -> Result<(), failure::Error> {
                 if app.quit_or_pause(key, &cfg) {
                     break;
                 }
-            }
+            },
             Event::Tick(duration) => app.tick(&cfg, duration),
         }
     }

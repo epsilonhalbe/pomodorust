@@ -15,6 +15,8 @@ pub struct Cfg {
     pub working: Duration,
     pub short_break: Duration,
     pub long_break: Duration,
+    pub pause_key: char,
+    pub quit_key: char,
 }
 
 impl Default for Cfg {
@@ -23,8 +25,8 @@ impl Default for Cfg {
             working: Duration::from_secs(25 * 60),
             short_break: Duration::from_secs(5 * 60),
             long_break: Duration::from_secs(10 * 60),
-            // pause_key: Key,
-            // exit_key: Key,
+            quit_key: 'q',
+            pause_key: 'p',
         }
     }
 }

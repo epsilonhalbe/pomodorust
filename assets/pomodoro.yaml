@@ -7,4 +7,6 @@ short_break:
 long_break:
   secs: 50
   nanos: 0
+quit_key: 'Q'
+pause_key: 'P'
 
