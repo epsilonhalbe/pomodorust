@@ -14,9 +14,10 @@ name = "pomodorust"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = { version = "0.4.10", features = ["serde"] }
+chrono = { version = "0.4.10" }
 clap = "2.27.0"
 config = "0.9.3"
+diesel = { version = "1.4.3", features = ["sqlite"] }
 failure = "0.1"
 lazy_static = "1.4.0"
 serde = { version = "1.0", features = ["derive"] }

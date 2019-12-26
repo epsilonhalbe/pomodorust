@@ -1,6 +1,7 @@
 use clap::{App, Arg};
 use config::{Config, File, FileFormat};
-use serde::{Deserialize, Serialize};
+use failure;
+use serde::{Deserialize};
 use std::env::var_os;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -9,31 +10,53 @@ use tui::layout::Rect;
 use tui::style::{Color, Style};
 use tui::terminal::Frame;
 use tui::widgets::{Block, Paragraph, Text, Widget};
+use diesel::sqlite::{SqliteConnection};
+use diesel::prelude::{Connection};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Debug)]
+pub struct CfgDTO {
+    pub working: u64,
+    pub short_break: u64,
+    pub long_break: u64,
+    pub db_path: PathBuf,
+}
+
 pub struct Cfg {
     pub working: Duration,
     pub short_break: Duration,
     pub long_break: Duration,
+    pub conn: SqliteConnection,
     pub pause_key: char,
     pub quit_key: char,
 }
 
-impl Default for Cfg {
+impl Default for CfgDTO {
     fn default() -> Self {
-        Cfg {
-            working: Duration::from_secs(25 * 60),
-            short_break: Duration::from_secs(5 * 60),
-            long_break: Duration::from_secs(10 * 60),
-            quit_key: 'q',
-            pause_key: 'p',
+        CfgDTO {
+            working: 25,
+            short_break: 5,
+            long_break: 10,
+            db_path: PathBuf::from("pomodorust.db"),
         }
     }
 }
 
+impl CfgDTO {
+  fn from(&self) -> Result<Cfg, failure::Error> {
+      let conn = SqliteConnection::establish(self.db_path.to_str().unwrap())?;
+      Ok(Cfg {
+          working: Duration::from_secs(self.working * 60),
+          short_break: Duration::from_secs(self.short_break * 60),
+          long_break: Duration::from_secs(self.long_break * 60),
+          conn: conn,
+          pause_key: 'p',
+          quit_key: 'q',
+      })
+  }
+}
+
 impl Cfg {
-    pub fn from_opts() -> Cfg {
-        let def_config: Option<PathBuf> = var_os("XDG_CONFIG_HOME")
+    pub fn from_opts() -> Result<Cfg, failure::Error> { let def_config: Option<PathBuf> = var_os("XDG_CONFIG_HOME")
             .map(PathBuf::from)
             .or(var_os("HOME").map(PathBuf::from).map(|x| x.join(".config")))
             .map(|s| s.join("pomodorust/config.yaml"));
@@ -63,7 +86,9 @@ impl Cfg {
 
         config.map(|c| cfg.merge(c));
 
-        cfg.try_into::<Cfg>().unwrap_or_default()
+        cfg.try_into::<CfgDTO>()
+            .unwrap_or_default()
+            .from()
     }
 
     pub fn paragraph<B>(&self, f: &mut Frame<B>, area: Rect)
