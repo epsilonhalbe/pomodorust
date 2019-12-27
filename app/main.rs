@@ -1,5 +1,3 @@
-// #![allow(unused_imports)]
-#![allow(unused_variables)]
 use failure;
 use pomodorust::config::Cfg;
 use pomodorust::database::{create_table};
@@ -65,7 +63,7 @@ fn main() -> Result<(), failure::Error> {
                     break;
                 }
             }
-            Event::Tick(duration) => app.tick(&cfg, duration),
+            Event::Tick(duration) => app.tick(&cfg, duration)?,
         }
     }
     terminal.clear()?;

@@ -1,12 +1,4 @@
-working:
-  secs: 100
-  nanos: 0
-short_break:
-  secs: 30
-  nanos: 0
-long_break:
-  secs: 50
-  nanos: 0
-quit_key: 'Q'
-pause_key: 'P'
-
+working: 5
+short_break: 1
+long_break: 3
+db_path: pomodorust.local.db

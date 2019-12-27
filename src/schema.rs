@@ -9,7 +9,7 @@ use std::error::Error;
 
 table! {
     statistics {
-        id -> u32,
+        id -> Integer,
         created_at -> Timestamp,
         jira_id -> Nullable<Text>,
         note -> Nullable<Text>,

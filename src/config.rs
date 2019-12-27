@@ -1,7 +1,9 @@
 use clap::{App, Arg};
 use config::{Config, File, FileFormat};
+use diesel::prelude::Connection;
+use diesel::sqlite::SqliteConnection;
 use failure;
-use serde::{Deserialize};
+use serde::Deserialize;
 use std::env::var_os;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -10,8 +12,6 @@ use tui::layout::Rect;
 use tui::style::{Color, Style};
 use tui::terminal::Frame;
 use tui::widgets::{Block, Paragraph, Text, Widget};
-use diesel::sqlite::{SqliteConnection};
-use diesel::prelude::{Connection};
 
 #[derive(Deserialize, Debug)]
 pub struct CfgDTO {
@@ -42,21 +42,22 @@ impl Default for CfgDTO {
 }
 
 impl CfgDTO {
-  fn from(&self) -> Result<Cfg, failure::Error> {
-      let conn = SqliteConnection::establish(self.db_path.to_str().unwrap())?;
-      Ok(Cfg {
-          working: Duration::from_secs(self.working * 60),
-          short_break: Duration::from_secs(self.short_break * 60),
-          long_break: Duration::from_secs(self.long_break * 60),
-          conn: conn,
-          pause_key: 'p',
-          quit_key: 'q',
-      })
-  }
+    fn from(&self) -> Result<Cfg, failure::Error> {
+        let conn = SqliteConnection::establish(self.db_path.to_str().unwrap())?;
+        Ok(Cfg {
+            working: Duration::from_secs(self.working * 60),
+            short_break: Duration::from_secs(self.short_break * 60),
+            long_break: Duration::from_secs(self.long_break * 60),
+            conn: conn,
+            pause_key: 'p',
+            quit_key: 'q',
+        })
+    }
 }
 
 impl Cfg {
-    pub fn from_opts() -> Result<Cfg, failure::Error> { let def_config: Option<PathBuf> = var_os("XDG_CONFIG_HOME")
+    pub fn from_opts() -> Result<Cfg, failure::Error> {
+        let def_path = var_os("XDG_CONFIG_HOME")
             .map(PathBuf::from)
             .or(var_os("HOME").map(PathBuf::from).map(|x| x.join(".config")))
             .map(|s| s.join("pomodorust/config.yaml"));
@@ -74,21 +75,28 @@ impl Cfg {
                     .takes_value(true),
             );
 
-        let config = options
-            .get_matches()
-            .value_of_os("config")
-            .map(PathBuf::from)
-            .or(def_config)
-            .map(File::from)
-            .map(|f| f.format(FileFormat::Yaml));
-
         let mut cfg = Config::default();
-
-        config.map(|c| cfg.merge(c));
-
-        cfg.try_into::<CfgDTO>()
-            .unwrap_or_default()
-            .from()
+        let dto : CfgDTO =
+            match options.get_matches().value_of_os("config").map(PathBuf::from) {
+                Some(path) => {
+                    if path.is_file() {
+                    cfg.merge(File::from(path).format(FileFormat::Yaml))?;
+                    cfg.try_into::<CfgDTO>().unwrap()
+                    } else {
+                        panic!("Configuration-file '{}' does not exist.", path.to_str().unwrap())
+                    }
+                }
+                None => {
+                    let path = def_path.unwrap();
+                    if path.is_file() {
+                        cfg.merge(File::from(path).format(FileFormat::Yaml))?;
+                        cfg.try_into::<CfgDTO>()?
+                    } else {
+                        CfgDTO::default()
+                    }
+                }
+            };
+        dto.from()
     }
 
     pub fn paragraph<B>(&self, f: &mut Frame<B>, area: Rect)
