@@ -1,6 +1,6 @@
 use failure;
 use pomodorust::config::Cfg;
-use pomodorust::database::{create_table};
+use pomodorust::database::create_table;
 use pomodorust::events::{Event, Events};
 use pomodorust::state::App;
 use std::io;

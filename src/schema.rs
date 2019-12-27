@@ -1,11 +1,4 @@
-#![allow(unused_imports)]
-use diesel::{table};
-use chrono::NaiveDateTime;
-use diesel::prelude::*;
-use diesel::insert_into;
-use diesel::debug_query;
-use diesel::sqlite::Sqlite;
-use std::error::Error;
+use diesel::table;
 
 table! {
     statistics {

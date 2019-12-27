@@ -1,6 +1,6 @@
 // use chrono::Duration;
 use crate::config::Cfg;
-use crate::database::{Statistic};
+use crate::database::Statistic;
 use failure;
 use std::time::Duration;
 use termion::event::Key;
@@ -35,7 +35,8 @@ impl App {
     pub fn new_with_cfg(cfg: &Cfg) -> App {
         App {
             past_pomodoros: Statistic::todays_no_pomodoros(&cfg.conn).unwrap_or(0),
-        ..App::new()}
+            ..App::new()
+        }
     }
 
     // event handlers
@@ -50,12 +51,11 @@ impl App {
         };
         key == Key::Char(cfg.quit_key)
     }
-    pub fn tick(&mut self, cfg: &Cfg, duration: Duration) -> Result<(),failure::Error>{
+    pub fn tick(&mut self, cfg: &Cfg, duration: Duration) -> Result<(), failure::Error> {
         match self.state {
             State::Running => {
                 self.current_pomodoro = self.current_pomodoro + duration;
                 if cfg.working <= self.current_pomodoro {
-
                     Statistic::empty().insert(&cfg.conn)?;
                     self.past_pomodoros += 1;
                     self.current_pomodoro = Duration::from_secs(0);
@@ -79,7 +79,7 @@ impl App {
     }
 
     // render functions
-    pub fn paragraph<B>(&self, cfg : &Cfg, f: &mut Frame<B>, area: Rect)
+    pub fn paragraph<B>(&self, cfg: &Cfg, f: &mut Frame<B>, area: Rect)
     where
         B: Backend,
     {
