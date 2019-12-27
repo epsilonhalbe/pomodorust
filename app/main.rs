@@ -22,7 +22,7 @@ fn main() -> Result<(), failure::Error> {
     let stdout = io::stdout().into_raw_mode()?;
     let backend = TermionBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    let mut app = App::new();
+    let mut app = App::new_with_cfg(&cfg);
     // Statistic::empty().insert(&conn)?;
     terminal.clear()?;
     terminal.hide_cursor()?;

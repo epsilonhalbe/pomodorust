@@ -13,7 +13,7 @@ use tui::widgets::{Block, Borders, Gauge, Paragraph, Text, Widget};
 pub struct App {
     pub current_pomodoro: Duration,
     pub current_break: Duration,
-    pub past_pomodoros: u32,
+    pub past_pomodoros: i64,
     pub state: State,
 }
 
@@ -24,13 +24,18 @@ pub enum State {
 }
 impl App {
     // constructor
-    pub fn new() -> App {
+    fn new() -> App {
         App {
             current_pomodoro: Duration::from_secs(0),
             current_break: Duration::from_secs(0),
             past_pomodoros: 0,
             state: State::Running,
         }
+    }
+    pub fn new_with_cfg(cfg: &Cfg) -> App {
+        App {
+            past_pomodoros: Statistic::todays_no_pomodoros(&cfg.conn).unwrap_or(0),
+        ..App::new()}
     }
 
     // event handlers
