@@ -1,8 +1,9 @@
 // use chrono::Duration;
-use crate::config::Cfg;
-use crate::database::Statistic;
+use crate::config::{Cfg, PAUSE_KEY, QUIT_KEY};
+use crate::database::{Statistic, Pomodoro};
 use failure;
 use std::time::Duration;
+use std::convert::{TryFrom};
 use termion::event::Key;
 use tui::backend::Backend;
 use tui::layout::Rect;
@@ -13,8 +14,11 @@ use tui::widgets::{Block, Borders, Gauge, Paragraph, Text, Widget};
 pub struct App {
     pub current_pomodoro: Duration,
     pub current_break: Duration,
-    pub past_pomodoros: i64,
+    pub todays_pomodoros: i64,
+    pub pomodoros: Vec<Pomodoro>,
     pub state: State,
+    tabs: Vec<String>,
+    pub current_tab: usize,
 }
 
 pub enum State {
@@ -23,43 +27,55 @@ pub enum State {
     Paused,
 }
 impl App {
-    // constructor
-    fn new() -> App {
+    pub fn new(cfg: &Cfg) -> App {
         App {
-            current_pomodoro: Duration::from_secs(0),
             current_break: Duration::from_secs(0),
-            past_pomodoros: 0,
+            current_pomodoro: Duration::from_secs(0),
+            todays_pomodoros: Statistic::todays_no_pomodoros(&cfg.conn).unwrap_or(0),
+            pomodoros: vec![], //Statistic::pomodoros_of(&cfg.conn, NaiveDateTime::parse_from_str("2019-12-29","%Y-%m-%d")),
             state: State::Running,
+            tabs: vec![String::from("Pomodoro"), String::from("Statistics")],
+            current_tab: 0,
         }
     }
-    pub fn new_with_cfg(cfg: &Cfg) -> App {
-        App {
-            past_pomodoros: Statistic::todays_no_pomodoros(&cfg.conn).unwrap_or(0),
-            ..App::new()
-        }
+    pub fn tabs(&self) -> &Vec<String> {
+        &self.tabs
     }
 
     // event handlers
 
     // returns true when to quit
-    pub fn quit_or_pause(&mut self, key: Key, cfg: &Cfg) -> bool {
-        if key == Key::Char(cfg.pause_key) {
-            self.state = match self.state {
-                State::Paused => State::Running,
-                _ => State::Paused,
+    pub fn key_handler(&mut self, key: Key) -> bool {
+        match key {
+            Key::Char(PAUSE_KEY) => {
+                self.state = match self.state {
+                    State::Paused => State::Running,
+                    _ => State::Paused,
+                }
+            },
+            // Key::Tab => {
+                // self.current_tab = (self.current_tab + 1) % self.tabs().len();
+                // self.state = State::Paused;
+            // }
+            Key::BackTab => {
+                self.current_tab = (self.current_tab + self.tabs().len() - 1) % self.tabs().len();
+                self.state = State::Paused;
+            }
+            _ => {
             }
         };
-        key == Key::Char(cfg.quit_key)
+        key == Key::Char(QUIT_KEY)
     }
     pub fn tick(&mut self, cfg: &Cfg, duration: Duration) -> Result<(), failure::Error> {
         match self.state {
             State::Running => {
                 self.current_pomodoro = self.current_pomodoro + duration;
                 if cfg.working <= self.current_pomodoro {
-                    Statistic::empty().insert(&cfg.conn)?;
-                    self.past_pomodoros += 1;
+                    let working_mins : i64 = TryFrom::try_from(cfg.working.as_secs()/60)?;
+                    Statistic::new(working_mins).insert(&cfg.conn)?;
+                    self.todays_pomodoros += 1;
                     self.current_pomodoro = Duration::from_secs(0);
-                    if self.past_pomodoros % 4 == 0 {
+                    if self.todays_pomodoros % 4 == 0 {
                         self.state = State::NextBreak(cfg.long_break);
                     } else {
                         self.state = State::NextBreak(cfg.short_break);
@@ -79,15 +95,15 @@ impl App {
     }
 
     // render functions
-    pub fn paragraph<B>(&self, cfg: &Cfg, f: &mut Frame<B>, area: Rect)
+    pub fn paragraph<B>(&self, f: &mut Frame<B>, area: Rect)
     where
         B: Backend,
     {
         let content = [
-            Text::raw(format!("Past pomodoros: {}\n", self.past_pomodoros)),
-            Text::raw(format!("Press '{}' to toggle pause.\n", cfg.pause_key)),
+            Text::raw(format!("Past pomodoros: {}\n", self.todays_pomodoros)),
+            Text::raw(format!("Press '{}' to toggle pause.\n", PAUSE_KEY)),
             Text::raw("Toggle pause to skip break.\n"),
-            Text::raw(format!("Press '{}' to quit.", cfg.quit_key)),
+            Text::raw(format!("Press '{}' to quit.", QUIT_KEY)),
         ];
         Paragraph::new(content.iter())
             .block(

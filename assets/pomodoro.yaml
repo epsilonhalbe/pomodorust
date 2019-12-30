@@ -1,4 +1,4 @@
-working: 5
-short_break: 1
-long_break: 3
+working_mins: 5
+short_break_mins: 1
+long_break_mins: 3
 db_path: pomodorust.local.db

@@ -1,17 +1,18 @@
 use failure;
 use pomodorust::config::Cfg;
-use pomodorust::database::create_table;
+use pomodorust::database::{create_table, HEADER};
 use pomodorust::events::{Event, Events};
 use pomodorust::state::App;
 use std::io;
 use termion::raw::IntoRawMode;
 use tui::backend::TermionBackend;
 use tui::layout::{
-    Constraint::Percentage,
+    Constraint::{Length, Min, Percentage},
     Direction::{Horizontal, Vertical},
-    Layout,
+    Layout
 };
-use tui::widgets::{Block, Borders, Widget};
+use tui::style::{Color, Style, Modifier};
+use tui::widgets::{Block, Borders, Tabs, Widget, Row, Table};
 use tui::Terminal;
 
 fn main() -> Result<(), failure::Error> {
@@ -22,44 +23,79 @@ fn main() -> Result<(), failure::Error> {
     let stdout = io::stdout().into_raw_mode()?;
     let backend = TermionBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    let mut app = App::new_with_cfg(&cfg);
-    // Statistic::empty().insert(&conn)?;
+    let mut app = App::new(&cfg);
     terminal.clear()?;
     terminal.hide_cursor()?;
+    let select_style = Style::default().bg(Color::Yellow).fg(Color::Black).modifier(Modifier::BOLD);
 
     loop {
         terminal.draw(|mut f| {
             let size = f.size();
-
             Block::default().render(&mut f, size);
 
             let chunks = Layout::default()
                 .direction(Vertical)
-                .margin(0)
-                .constraints([Percentage(75), Percentage(25)].as_ref())
+                .constraints([Length(3), Min(0)].as_ref())
                 .split(size);
 
-            Block::default()
-                .borders(Borders::ALL)
+            Tabs::default()
+                .block(Block::default().borders(Borders::ALL))
+                .titles(&app.tabs())
+                .select(app.current_tab)
+                .highlight_style(select_style)
                 .render(&mut f, chunks[0]);
-            {
-                let chunks = Layout::default()
-                    .direction(Horizontal)
-                    .margin(1)
-                    .constraints([Percentage(50), Percentage(50)].as_ref())
-                    .split(chunks[0]);
+            match app.current_tab {
+                0 => {
+                    let chunks_ = Layout::default()
+                        .direction(Vertical)
+                        .margin(0)
+                        .constraints([Percentage(75), Percentage(25)].as_ref())
+                        .split(chunks[1]);
 
-                app.paragraph(&cfg, &mut f, chunks[0]);
-                cfg.paragraph(&mut f, chunks[1]);
-            }
-            {
-                app.gauge(&cfg, &mut f, chunks[1]);
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .render(&mut f, chunks_[0]);
+                    {
+                        let chunks__ = Layout::default()
+                            .direction(Horizontal)
+                            .margin(1)
+                            .constraints([Percentage(50), Percentage(50)].as_ref())
+                            .split(chunks_[0]);
+
+                        app.paragraph(&mut f, chunks__[0]);
+                        cfg.paragraph(&mut f, chunks__[1]);
+                    }
+                    {
+                        app.gauge(&cfg, &mut f, chunks_[1]);
+                    }
+                }
+                1 => {
+                    let rows = app.pomodoros.iter().map(|_| {
+                            Row::Data(vec!["id", "at", "dur", "ticket", "note" ].into_iter())
+                        }
+                    );
+
+                    let rects = Layout::default()
+                        .constraints([Percentage(100)].as_ref())
+                        .split(chunks[1]);
+                    Table::new(HEADER.into_iter(), rows)
+                        .block(Block::default().borders(Borders::ALL))
+                        .widths(&[
+                            Length(05),
+                            Length(30),
+                            Length(30),
+                            Min(50),
+                            Min(50),
+                        ])
+                        .render(&mut f, rects[0]);
+                    }
+                _ => {}
             }
         })?;
 
         match events.next()? {
             Event::Input(key) => {
-                if app.quit_or_pause(key, &cfg) {
+                if app.key_handler(key) {
                     break;
                 }
             }

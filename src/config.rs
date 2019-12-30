@@ -15,27 +15,28 @@ use tui::widgets::{Block, Paragraph, Text, Widget};
 
 #[derive(Deserialize, Debug)]
 pub struct CfgDTO {
-    pub working: u64,
-    pub short_break: u64,
-    pub long_break: u64,
+    pub working_mins: u64,
+    pub short_break_mins: u64,
+    pub long_break_mins: u64,
     pub db_path: PathBuf,
 }
+
+pub const PAUSE_KEY : char = 'p';
+pub const QUIT_KEY : char = 'q';
 
 pub struct Cfg {
     pub working: Duration,
     pub short_break: Duration,
     pub long_break: Duration,
     pub conn: SqliteConnection,
-    pub pause_key: char,
-    pub quit_key: char,
 }
 
 impl Default for CfgDTO {
     fn default() -> Self {
         CfgDTO {
-            working: 25,
-            short_break: 5,
-            long_break: 10,
+            working_mins: 25,
+            short_break_mins: 5,
+            long_break_mins: 10,
             db_path: PathBuf::from("pomodorust.db"),
         }
     }
@@ -45,12 +46,10 @@ impl CfgDTO {
     fn from(&self) -> Result<Cfg, failure::Error> {
         let conn = SqliteConnection::establish(self.db_path.to_str().unwrap())?;
         Ok(Cfg {
-            working: Duration::from_secs(self.working * 60),
-            short_break: Duration::from_secs(self.short_break * 60),
-            long_break: Duration::from_secs(self.long_break * 60),
+            working: Duration::from_secs(self.working_mins * 60),
+            short_break: Duration::from_secs(self.short_break_mins * 60),
+            long_break: Duration::from_secs(self.long_break_mins * 60),
             conn: conn,
-            pause_key: 'p',
-            quit_key: 'q',
         })
     }
 }
