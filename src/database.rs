@@ -25,14 +25,22 @@ pub struct Pomodoro {
 }
 
 impl Pomodoro {
-    pub fn as_row(self) -> [String; 5] {
-        [
+    pub fn as_row(&self) -> Vec<String> {
+        let ticket_id = self.ticket_id.clone().unwrap_or(String::new());
+        let note = self.note.clone().unwrap_or(String::new());
+        vec![
             format!("{}", self.id),
             format!("{}", self.created_at),
             format!("{}", self.duration),
-            self.ticket_id.unwrap_or(String::new()),
-            self.note.unwrap_or(String::new()),
+            ticket_id,
+            note,
         ]
+    }
+
+    pub fn pomodoros_of(conn: &SqliteConnection, day: NaiveDateTime) -> QueryResult<Vec<Pomodoro>> {
+        use schema::statistics::dsl::*;
+        let sqltext = format!("date(created_at) = date('{}')", day);
+        statistics.filter(sql(&sqltext)).load::<Pomodoro>(conn)
     }
 }
 
@@ -82,22 +90,16 @@ impl Statistic {
             .execute(conn)
     }
 
-    pub fn pomodoros_of(conn: &SqliteConnection, day: NaiveDateTime) -> QueryResult<Vec<Pomodoro>> {
-        use schema::statistics::dsl::*;
-        let sqltext = format!("date(created_at) = date('{}')", day);
-        statistics.filter(sql(&sqltext)).load::<Pomodoro>(conn)
-    }
-
-    pub fn todays_no_pomodoros(conn: &SqliteConnection) -> QueryResult<i64> {
-        use schema::statistics::dsl::*;
-        statistics
-            .select(count_star())
-            .filter(sql("date(created_at) = date('now', 'start of day')"))
-            .first::<i64>(conn)
-    }
-
     pub fn insert(&self, conn: &SqliteConnection) -> QueryResult<usize> {
         use schema::statistics::dsl::*;
         insert_into(statistics).values(self).execute(conn)
     }
+}
+
+pub fn todays_no_pomodoros(conn: &SqliteConnection) -> QueryResult<i64> {
+    use schema::statistics::dsl::*;
+    statistics
+        .select(count_star())
+        .filter(sql("date(created_at) = date('now', 'start of day')"))
+        .first::<i64>(conn)
 }

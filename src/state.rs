@@ -1,9 +1,10 @@
-// use chrono::Duration;
 use crate::config::{Cfg, PAUSE_KEY, QUIT_KEY};
-use crate::database::{Statistic, Pomodoro};
+use crate::database::{todays_no_pomodoros, Pomodoro, Statistic};
+use chrono::naive::NaiveDateTime;
 use failure;
+use std::convert::TryFrom;
 use std::time::Duration;
-use std::convert::{TryFrom};
+use std::time::SystemTime;
 use termion::event::Key;
 use tui::backend::Backend;
 use tui::layout::Rect;
@@ -17,8 +18,8 @@ pub struct App {
     pub todays_pomodoros: i64,
     pub pomodoros: Vec<Pomodoro>,
     pub state: State,
-    tabs: Vec<String>,
     pub current_tab: usize,
+    tabs: Vec<String>,
 }
 
 pub enum State {
@@ -26,13 +27,25 @@ pub enum State {
     NextBreak(Duration),
     Paused,
 }
+
 impl App {
     pub fn new(cfg: &Cfg) -> App {
+        let today = NaiveDateTime::from_timestamp(
+            TryFrom::try_from(
+                SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+            )
+            .unwrap(),
+            0,
+        );
+        let pomodoros = Pomodoro::pomodoros_of(&cfg.conn, today).unwrap();
         App {
             current_break: Duration::from_secs(0),
             current_pomodoro: Duration::from_secs(0),
-            todays_pomodoros: Statistic::todays_no_pomodoros(&cfg.conn).unwrap_or(0),
-            pomodoros: vec![], //Statistic::pomodoros_of(&cfg.conn, NaiveDateTime::parse_from_str("2019-12-29","%Y-%m-%d")),
+            todays_pomodoros: todays_no_pomodoros(&cfg.conn).unwrap_or(0),
+            pomodoros: pomodoros,
             state: State::Running,
             tabs: vec![String::from("Pomodoro"), String::from("Statistics")],
             current_tab: 0,
@@ -41,7 +54,6 @@ impl App {
     pub fn tabs(&self) -> &Vec<String> {
         &self.tabs
     }
-
     // event handlers
 
     // returns true when to quit
@@ -52,17 +64,16 @@ impl App {
                     State::Paused => State::Running,
                     _ => State::Paused,
                 }
-            },
+            }
             // Key::Tab => {
-                // self.current_tab = (self.current_tab + 1) % self.tabs().len();
-                // self.state = State::Paused;
+            // self.current_tab = (self.current_tab + 1) % self.tabs().len();
+            // self.state = State::Paused;
             // }
             Key::BackTab => {
-                self.current_tab = (self.current_tab + self.tabs().len() - 1) % self.tabs().len();
+                self.current_tab = (self.current_tab + self.tabs.len() - 1) % self.tabs.len();
                 self.state = State::Paused;
             }
-            _ => {
-            }
+            _ => {}
         };
         key == Key::Char(QUIT_KEY)
     }
@@ -71,7 +82,7 @@ impl App {
             State::Running => {
                 self.current_pomodoro = self.current_pomodoro + duration;
                 if cfg.working <= self.current_pomodoro {
-                    let working_mins : i64 = TryFrom::try_from(cfg.working.as_secs()/60)?;
+                    let working_mins: i64 = TryFrom::try_from(cfg.working.as_secs() / 60)?;
                     Statistic::new(working_mins).insert(&cfg.conn)?;
                     self.todays_pomodoros += 1;
                     self.current_pomodoro = Duration::from_secs(0);

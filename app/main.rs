@@ -9,10 +9,10 @@ use tui::backend::TermionBackend;
 use tui::layout::{
     Constraint::{Length, Min, Percentage},
     Direction::{Horizontal, Vertical},
-    Layout
+    Layout,
 };
-use tui::style::{Color, Style, Modifier};
-use tui::widgets::{Block, Borders, Tabs, Widget, Row, Table};
+use tui::style::{Color, Modifier, Style};
+use tui::widgets::{Block, Borders, Row, Table, Tabs, Widget};
 use tui::Terminal;
 
 fn main() -> Result<(), failure::Error> {
@@ -26,7 +26,10 @@ fn main() -> Result<(), failure::Error> {
     let mut app = App::new(&cfg);
     terminal.clear()?;
     terminal.hide_cursor()?;
-    let select_style = Style::default().bg(Color::Yellow).fg(Color::Black).modifier(Modifier::BOLD);
+    let select_style = Style::default()
+        .bg(Color::Yellow)
+        .fg(Color::Black)
+        .modifier(Modifier::BOLD);
 
     loop {
         terminal.draw(|mut f| {
@@ -70,25 +73,27 @@ fn main() -> Result<(), failure::Error> {
                     }
                 }
                 1 => {
-                    let rows = app.pomodoros.iter().map(|_| {
-                            Row::Data(vec!["id", "at", "dur", "ticket", "note" ].into_iter())
-                        }
-                    );
+                    let rows = app.pomodoros.iter().map(|pom| {
+                        Row::Data(
+                            vec![
+                                format!("{}", pom.id),
+                                format!("{}", pom.created_at),
+                                format!("{}", pom.duration),
+                                format!("{}", pom.ticket_id.to_owned().unwrap_or_default()),
+                                format!("{}", pom.note.to_owned().unwrap_or_default()),
+                            ]
+                            .into_iter(),
+                        )
+                    });
 
                     let rects = Layout::default()
                         .constraints([Percentage(100)].as_ref())
                         .split(chunks[1]);
                     Table::new(HEADER.into_iter(), rows)
                         .block(Block::default().borders(Borders::ALL))
-                        .widths(&[
-                            Length(05),
-                            Length(30),
-                            Length(30),
-                            Min(50),
-                            Min(50),
-                        ])
+                        .widths(&[Length(05), Length(30), Length(30), Min(50), Min(50)])
                         .render(&mut f, rects[0]);
-                    }
+                }
                 _ => {}
             }
         })?;

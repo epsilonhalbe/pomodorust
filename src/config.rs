@@ -21,8 +21,8 @@ pub struct CfgDTO {
     pub db_path: PathBuf,
 }
 
-pub const PAUSE_KEY : char = 'p';
-pub const QUIT_KEY : char = 'q';
+pub const PAUSE_KEY: char = 'p';
+pub const QUIT_KEY: char = 'q';
 
 pub struct Cfg {
     pub working: Duration,
@@ -75,26 +75,32 @@ impl Cfg {
             );
 
         let mut cfg = Config::default();
-        let dto : CfgDTO =
-            match options.get_matches().value_of_os("config").map(PathBuf::from) {
-                Some(path) => {
-                    if path.is_file() {
+        let dto: CfgDTO = match options
+            .get_matches()
+            .value_of_os("config")
+            .map(PathBuf::from)
+        {
+            Some(path) => {
+                if path.is_file() {
                     cfg.merge(File::from(path).format(FileFormat::Yaml))?;
                     cfg.try_into::<CfgDTO>().unwrap()
-                    } else {
-                        panic!("Configuration-file '{}' does not exist.", path.to_str().unwrap())
-                    }
+                } else {
+                    panic!(
+                        "Configuration-file '{}' does not exist.",
+                        path.to_str().unwrap()
+                    )
                 }
-                None => {
-                    let path = def_path.unwrap();
-                    if path.is_file() {
-                        cfg.merge(File::from(path).format(FileFormat::Yaml))?;
-                        cfg.try_into::<CfgDTO>()?
-                    } else {
-                        CfgDTO::default()
-                    }
+            }
+            None => {
+                let path = def_path.unwrap();
+                if path.is_file() {
+                    cfg.merge(File::from(path).format(FileFormat::Yaml))?;
+                    cfg.try_into::<CfgDTO>()?
+                } else {
+                    CfgDTO::default()
                 }
-            };
+            }
+        };
         dto.from()
     }
 
