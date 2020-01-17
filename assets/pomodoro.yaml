@@ -1,4 +1,4 @@
-working_mins: 5
-short_break_mins: 1
-long_break_mins: 3
-db_path: pomodorust.local.db
+working_mins: 25
+short_break_mins: 5
+long_break_mins: 10
+db_path: ~/.cache/pomodorust/pomodorust.db
