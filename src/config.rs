@@ -3,7 +3,7 @@ use config::{Config, File, FileFormat};
 use diesel::prelude::Connection;
 use diesel::sqlite::SqliteConnection;
 use failure;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::env::var_os;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -13,7 +13,7 @@ use tui::style::{Color, Style};
 use tui::terminal::Frame;
 use tui::widgets::{Block, Paragraph, Text, Widget};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct CfgDTO {
     pub working_mins: u64,
     pub short_break_mins: u64,
@@ -70,7 +70,7 @@ impl Cfg {
                     .short("c")
                     .long("config")
                     .value_name("FILE")
-                    .help("Sets a custom config file")
+                    .help("Sets a custom config file like")
                     .takes_value(true),
             );
 

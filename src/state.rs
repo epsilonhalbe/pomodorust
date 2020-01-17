@@ -5,6 +5,8 @@ use failure;
 use std::convert::TryFrom;
 use std::time::Duration;
 use std::time::SystemTime;
+use std::cmp::min;
+use std::io::stdin;
 use termion::event::Key;
 use tui::backend::Backend;
 use tui::layout::Rect;
@@ -18,7 +20,8 @@ pub struct App {
     pub todays_pomodoros: i64,
     pub pomodoros: Vec<Pomodoro>,
     pub state: State,
-    pub current_tab: usize,
+    pub selected_tab: usize,
+    pub selected_pomodoro: Option<usize>,
     tabs: Vec<String>,
 }
 
@@ -41,6 +44,7 @@ impl App {
             0,
         );
         let pomodoros = Pomodoro::pomodoros_of(&cfg.conn, today).unwrap();
+        let sel_pom = if pomodoros.is_empty() { None } else { Some(0) };
         App {
             current_break: Duration::from_secs(0),
             current_pomodoro: Duration::from_secs(0),
@@ -48,7 +52,8 @@ impl App {
             pomodoros: pomodoros,
             state: State::Running,
             tabs: vec![String::from("Pomodoro"), String::from("Statistics")],
-            current_tab: 0,
+            selected_tab: 0,
+            selected_pomodoro: sel_pom,
         }
     }
     pub fn tabs(&self) -> &Vec<String> {
@@ -66,12 +71,46 @@ impl App {
                 }
             }
             // Key::Tab => {
-            // self.current_tab = (self.current_tab + 1) % self.tabs().len();
+            // self.selected_tab = (self.selected_tab + 1) % self.tabs().len();
             // self.state = State::Paused;
             // }
             Key::BackTab => {
-                self.current_tab = (self.current_tab + self.tabs.len() - 1) % self.tabs.len();
+                self.selected_tab = (self.selected_tab + self.tabs.len() - 1) % self.tabs.len();
                 self.state = State::Paused;
+            }
+            Key::Up => {
+                if self.selected_tab == 1 {
+                    match self.selected_pomodoro {
+                        Some(0) => {}
+                        Some(sel) => self.selected_pomodoro = Some(sel - 1),
+                        None => if !self.pomodoros.is_empty() {
+                            self.selected_pomodoro = Some(0);
+                        }
+                    }
+                }
+            }
+            Key::Down => {
+                if self.selected_tab == 1 {
+                    match self.selected_pomodoro {
+                        Some(sel) => self.selected_pomodoro = Some(min(self.pomodoros.len() - 1, sel + 1)),
+                        None => if !self.pomodoros.is_empty() {
+                            self.selected_pomodoro = Some(0);
+                        }
+                    }
+                }
+            }
+            Key::Char('t') => {
+                if self.selected_tab == 1 {
+                    println!("Editing ticket text!");
+                    let mut input = String::new();
+                    stdin().read_line(&mut input).unwrap();
+                    println!("You typed: {}", input.trim());
+                }
+            }
+            Key::Char('n') => {
+                if self.selected_tab == 1 {
+                    println!("Editing note text!")
+                }
             }
             _ => {}
         };

@@ -44,10 +44,10 @@ fn main() -> Result<(), failure::Error> {
             Tabs::default()
                 .block(Block::default().borders(Borders::ALL))
                 .titles(&app.tabs())
-                .select(app.current_tab)
+                .select(app.selected_tab)
                 .highlight_style(select_style)
                 .render(&mut f, chunks[0]);
-            match app.current_tab {
+            match app.selected_tab {
                 0 => {
                     let chunks_ = Layout::default()
                         .direction(Vertical)
@@ -73,17 +73,19 @@ fn main() -> Result<(), failure::Error> {
                     }
                 }
                 1 => {
-                    let rows = app.pomodoros.iter().map(|pom| {
-                        Row::Data(
-                            vec![
+                    let rows = app.pomodoros.iter().enumerate().map(|(i,pom)| {
+                        let row = vec![
                                 format!("{}", pom.id),
                                 format!("{}", pom.created_at),
                                 format!("{}", pom.duration),
                                 format!("{}", pom.ticket_id.to_owned().unwrap_or_default()),
                                 format!("{}", pom.note.to_owned().unwrap_or_default()),
-                            ]
-                            .into_iter(),
-                        )
+                            ];
+                        if Some(i) == app.selected_pomodoro {
+                            Row::StyledData(row.into_iter(), select_style)
+                        } else {
+                            Row::Data(row.into_iter())
+                        }
                     });
 
                     let rects = Layout::default()
