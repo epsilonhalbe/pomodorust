@@ -1,6 +1,6 @@
 [package]
 name    = "pomodorust"
-version = "1.0.0"
+version = "1.1.0"
 authors = ["Martin Heuschober <epsilonhalbe@gmail.com>"]
 edition = "2018"
 autotests = false

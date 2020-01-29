@@ -62,7 +62,7 @@ impl Cfg {
             .map(|s| s.join("pomodorust/config.yaml"));
 
         let options: App = App::new("PomodoRust")
-            .version("1.0.0")
+            .version("1.1.0")
             .author("Martin Heuschober <epsilonhalbe@gmail.com>")
             .about("commandline pomodoro thingy")
             .arg(
