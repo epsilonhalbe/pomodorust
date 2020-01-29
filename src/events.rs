@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{stdin};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
@@ -23,14 +23,16 @@ impl Events {
         let input_handle = {
             let tx = tx.clone();
             thread::spawn(move || {
-                for evt in io::stdin().keys() {
+                let stdin = stdin();
+                let locked = stdin.lock();
+                for evt in locked.keys() {
                     match evt {
                         Ok(key) => {
                             if let Err(_) = tx.send(Event::Input(key)) {
                                 return;
                             }
                         }
-                        Err(_) => {}
+                        Err(_) => {panic!("aaaaargh")}
                     }
                 }
             })

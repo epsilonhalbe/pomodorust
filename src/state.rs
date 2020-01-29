@@ -6,7 +6,7 @@ use std::convert::TryFrom;
 use std::time::Duration;
 use std::time::SystemTime;
 use std::cmp::min;
-use std::io::stdin;
+use std::io::{stdin, BufRead};
 use termion::event::Key;
 use tui::backend::Backend;
 use tui::layout::Rect;
@@ -103,7 +103,9 @@ impl App {
                 if self.selected_tab == 1 {
                     println!("Editing ticket text!");
                     let mut input = String::new();
-                    stdin().read_line(&mut input).unwrap();
+                    let stdin = stdin();
+                    let mut handle = stdin.lock();
+                    handle.read_line(&mut input).unwrap();
                     println!("You typed: {}", input.trim());
                 }
             }
